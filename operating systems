@@ -1,0 +1,49 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+
+int main() 
+{
+    // Step 4 & 5: Display initial process IDs
+    printf("Before fork:\n");
+    printf("Process ID: %d\n", getpid());
+    printf("Parent Process ID: %d\n\n", getppid());
+
+    // Step 6: Create a new process using fork()
+    pid_t pid = fork();
+
+    if (pid < 0) 
+    {
+        // Fork failed
+        fprintf(stderr, "Fork Failed\n");
+        return 1;
+    } 
+    else if (pid == 0) 
+    {
+        // Step 7: Child process execution
+        printf("--- Child Process ---\n");
+        printf("Child Process ID: %d\n", getpid());
+        printf("Child's Parent Process ID: %d\n\n", getppid());
+    } 
+    else 
+    {
+        // Step 7: Parent process execution
+        printf("--- Parent Process ---\n");
+        printf("Parent Process ID: %d\n", getpid());
+        printf("Parent's Parent Process ID: %d\n\n", getppid());
+    }
+
+    return 0;
+}
+output:
+Before fork:
+Process ID: 15400
+Parent Process ID: 15393
+
+--- Parent Process ---
+Parent Process ID: 15400
+Parent's Parent Process ID: 15393
+
+--- Child Process ---
+Child Process ID: 15401
+Child's Parent Process ID: 15400
