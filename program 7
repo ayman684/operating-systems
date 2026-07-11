@@ -1,0 +1,119 @@
+#include <stdio.h>
+
+int main() {
+    int at[10], bt[10], pr[10];
+    int i, j, n, count, over = 0, sum_wait = 0, sum_turnaround = 0, start;
+    float avgwait, avgturn;
+
+    printf("Enter the number of processes:\n");
+    scanf("%d", &n);
+
+    for (i = 0; i < n; i++) {
+        printf("Enter the arrival time and execution time for process %d:\n", i + 1);
+        scanf("%d %d", &at[i], &bt[i]);
+        pr[i] = i + 1;
+    }
+
+    // Sort the processes based on arrival time first (Bubble Sort)
+    for (i = 0; i < n - 1; i++) {
+        for (j = i + 1; j < n; j++) {
+            if (at[i] > at[j]) {
+                // Swap Arrival Time
+                int temp = at[i];
+                at[i] = at[j];
+                at[j] = temp;
+
+                // Swap Burst Time
+                temp = bt[i];
+                bt[i] = bt[j];
+                bt[j] = temp;
+
+                // Swap Process ID
+                temp = pr[i];
+                pr[i] = pr[j];
+                pr[j] = temp;
+            }
+        }
+    }
+
+    printf("\nProcess\tArrival time\tExecution time\tStart time\tEnd time\tWaiting time\tTurnaround time\n");
+
+    start = at[0];
+    while (over < n) {
+        count = 0;
+        
+        // Count how many processes have arrived by the current start time
+        for (i = over; i < n; i++) {
+            if (at[i] <= start) {
+                count++;
+            } else {
+                break;
+            }
+        }
+
+        // If multiple processes have arrived, sort them by burst time (SJF)
+        if (count > 1) {
+            for (i = over; i < over + count - 1; i++) {
+                for (j = i + 1; j < over + count; j++) {
+                    if (bt[i] > bt[j]) {
+                        // Swap Arrival Time
+                        int temp = at[i];
+                        at[i] = at[j];
+                        at[j] = temp;
+
+                        // Swap Burst Time
+                        temp = bt[i];
+                        bt[i] = bt[j];
+                        bt[j] = temp;
+
+                        // Swap Process ID
+                        temp = pr[i];
+                        pr[i] = pr[j];
+                        pr[j] = temp;
+                    }
+                }
+            }
+        }
+
+        // Calculate timing variables
+        start = (start < at[over]) ? at[over] : start; // Handle CPU idle time
+        int end_time = start + bt[over];
+        int waiting_time = start - at[over];
+        int turnaround_time = end_time - at[over];
+
+        // Print row details
+        printf("p[%d]\t%d\t\t%d\t\t%d\t\t%d\t\t%d\t\t%d\n", 
+               pr[over], at[over], bt[over], start, end_time, waiting_time, turnaround_time);
+
+        sum_wait += waiting_time;
+        sum_turnaround += turnaround_time;
+
+        start = end_time; // Advance timeline
+        over++;
+    }
+
+    avgwait = (float)sum_wait / n;
+    avgturn = (float)sum_turnaround / n;
+
+    printf("\nAverage waiting time is %f\n", avgwait);
+    printf("Average turnaround time is %f\n", avgturn);
+
+    return 0;
+}
+output:
+Enter the number of processes:
+3
+Enter the arrival time and execution time for process 1:
+0 5
+Enter the arrival time and execution time for process 2:
+1 3
+Enter the arrival time and execution time for process 3:
+2 4
+
+Process Arrival time    Execution time  Start time      End time        Waiting time    Turnaround time
+p[1]    0               5               0               5               0               5
+p[2]    1               3               5               8               4               7
+p[3]    2               4               8               12              6               10
+
+Average waiting time is 3.333333
+Average turnaround time is 7.333333
