@@ -1,0 +1,121 @@
+#include <stdio.h>
+
+// Standard sorting function used to reorganize memory partitions
+void sort(int a[], int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (a[i] < a[j]) {
+                int t = a[i];
+                a[i] = a[j];
+                a[j] = t;
+            }
+        }
+    }
+}
+
+// Reverses the order of an array (used for Worst Fit)
+void reverse_sort(int a[], int n) {
+    sort(a, n);
+    for (int i = 0; i < n / 2; i++) {
+        int t = a[i];
+        a[i] = a[n - 1 - i];
+        a[n - 1 - i] = t;
+    }
+}
+
+// Baseline allocation logic shared across the strategies
+void bestfit(int mp[], int p[], int m, int n) {
+    int j = 0;
+    for (int i = 0; i < n; i++) {
+        if (mp[j] >= p[i]) {
+            printf("\n%d fits in %d", p[i], mp[j]);
+            mp[j] = mp[j] - p[i];
+            j = j + 1;
+        } else {
+            printf("\n%d must wait for its process", p[i]);
+        }
+    }
+}
+
+// First Fit implementation (Allocates without rearranging)
+void firstfit(int mp[], int p[], int m, int n) {
+    bestfit(mp, p, m, n);
+}
+
+// Best Fit implementation (Sorts partitions in ascending order first)
+void bestfit_strategy(int mp[], int p[], int m, int n) {
+    sort(mp, m);
+    bestfit(mp, p, m, n);
+}
+
+// Worst Fit implementation (Sorts partitions in descending order first)
+void worstfit(int mp[], int p[], int m, int n) {
+    reverse_sort(mp, m);
+    bestfit(mp, p, m, n);
+}
+
+int main() {
+    int m, n, ch;
+    int mp[20], p[20];
+    int mp_copy[20];
+
+    printf("Number of memory partitions : ");
+    scanf("%d", &m);
+
+    printf("Number of process : ");
+    scanf("%d", &n);
+
+    printf("Enter the memory partitions : \n");
+    for (int i = 0; i < m; i++) {
+        scanf("%d", &mp[i]);
+    }
+
+    printf("Enter process size : \n");
+    for (int i = 0; i < n; i++) {
+        scanf("%d", &p[i]);
+    }
+
+    printf("\n1. Firstfit\n2. Bestfit\n3. Worstfit\nEnter your choice : ");
+    scanf("%d", &ch);
+
+    // Keep a fresh backup copy of partitions for manipulation
+    for (int i = 0; i < m; i++) {
+        mp_copy[i] = mp[i];
+    }
+
+    switch (ch) {
+        case 1:
+            firstfit(mp_copy, p, m, n);
+            break;
+        case 2:
+            bestfit_strategy(mp_copy, p, m, n);
+            break;
+        case 3:
+            worstfit(mp_copy, p, m, n);
+            break;
+        default:
+            printf("\nInvalid");
+            break;
+    }
+    printf("\n");
+    return 0;
+    output:
+    Number of memory partitions : 3
+Number of process : 2
+Enter the memory partitions : 
+100
+500
+200
+Enter process size : 
+150
+90
+
+1. Firstfit
+2. Bestfit
+3. Worstfit
+Enter your choice : 2
+
+150 fits in 200
+90 fits in 100
+
+}
