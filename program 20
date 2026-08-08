@@ -1,0 +1,76 @@
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+
+sem_t mutex, writeBlock;
+int data = 0;
+int readersCount = 0;
+
+void *reader(void *arg) {
+    int i = 0;
+    while (i < 10) {
+        sem_wait(&mutex);
+        readersCount++;
+        if (readersCount == 1) {
+            sem_wait(&writeBlock); // first reader blocks writers
+        }
+        sem_post(&mutex);
+
+        // Reading operation
+        printf("Reader reads data: %d\n", data);
+
+        sem_wait(&mutex);
+        readersCount--;
+        if (readersCount == 0) {
+            sem_post(&writeBlock); // last reader allows writers
+        }
+        sem_post(&mutex);
+
+        i++;
+        // sleep(1); // uncomment to slow it down and see interleaving
+    }
+    return NULL;
+}
+
+void *writer(void *arg) {
+    int i = 0;
+    while (i < 10) {
+        sem_wait(&writeBlock);
+
+        // Writing operation
+        data++;
+        printf("Writer writes data: %d\n", data);
+
+        sem_post(&writeBlock);
+        i++;
+        // sleep(1); // uncomment to slow it down
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t reader_thread, writer_thread;
+
+    sem_init(&mutex, 0, 1);
+    sem_init(&writeBlock, 0, 1);
+
+    pthread_create(&reader_thread, NULL, reader, NULL);
+    pthread_create(&writer_thread, NULL, writer, NULL);
+
+    pthread_join(reader_thread, NULL);
+    pthread_join(writer_thread, NULL);
+
+    sem_destroy(&mutex);
+    sem_destroy(&writeBlock);
+
+    return 0;
+}
+output:
+Writer writes data: 1
+Reader reads data: 1
+Writer writes data: 2
+Reader reads data: 2
+...
+Writer writes data: 10
+Reader reads data: 10
