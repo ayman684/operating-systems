@@ -1,0 +1,110 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h> // for sleep()
+
+#define BUFFER_SIZE 5
+#define MAX_ITEMS 10 // Maximum number of items to be produced/consumed
+
+int buffer[BUFFER_SIZE];
+
+sem_t empty; // counts empty slots
+sem_t full; // counts full slots
+pthread_mutex_t mutex; // protects buffer access
+
+int produced_items = 0;
+int consumed_items = 0;
+int in = 0; // next position to produce
+int out = 0; // next position to consume
+
+void* producer(void* arg) {
+    while (produced_items < MAX_ITEMS) {
+        int item = produced_items + 1;
+
+        sem_wait(&empty); // wait for an empty slot
+        pthread_mutex_lock(&mutex); // enter critical section
+
+        buffer[in] = item;
+        printf("Produced: %d at buffer[%d]\n", item, in);
+        in = (in + 1) % BUFFER_SIZE;
+        produced_items++;
+
+        pthread_mutex_unlock(&mutex); // exit critical section
+        sem_post(&full); // signal a new full slot
+
+        sleep(1); // Sleep for a while
+    }
+    return NULL;
+}
+
+void* consumer(void* arg) {
+    while (consumed_items < MAX_ITEMS) {
+        sem_wait(&full); // wait for a full slot
+        pthread_mutex_lock(&mutex); // enter critical section
+
+        int item = buffer[out];
+        printf("Consumed: %d from buffer[%d]\n", item, out);
+        buffer[out] = 0; // optional: mark as empty
+        out = (out + 1) % BUFFER_SIZE;
+        consumed_items++;
+
+        pthread_mutex_unlock(&mutex); // exit critical section
+        sem_post(&empty); // signal a new empty slot
+
+        sleep(2); // Sleep for a while
+    }
+    return NULL;
+}
+
+int main() {
+    pthread_t producer_thread, consumer_thread;
+
+    // Initialize semaphores and mutex
+    sem_init(&empty, 0, BUFFER_SIZE); // all slots empty initially
+    sem_init(&full, 0, 0); // no full slots initially
+    pthread_mutex_init(&mutex, NULL);
+
+    // Initialize buffer to 0
+    for(int i = 0; i < BUFFER_SIZE; i++) {
+        buffer[i] = 0;
+    }
+
+    // Create producer and consumer threads
+    pthread_create(&producer_thread, NULL, producer, NULL);
+    pthread_create(&consumer_thread, NULL, consumer, NULL);
+
+    // Wait for threads to finish
+    pthread_join(producer_thread, NULL);
+    pthread_join(consumer_thread, NULL);
+
+    // Destroy semaphores and mutex
+    sem_destroy(&empty);
+    sem_destroy(&full);
+    pthread_mutex_destroy(&mutex);
+
+    printf("All items produced and consumed. Exiting.\n");
+    return 0;
+}
+output:
+Produced: 1 at buffer[0]
+Consumed: 1 from buffer[0]
+Produced: 2 at buffer[1]
+Produced: 3 at buffer[2]
+Consumed: 2 from buffer[1]
+Produced: 4 at buffer[3]
+Consumed: 3 from buffer[2]
+Produced: 5 at buffer[4]
+Produced: 6 at buffer[0]
+Consumed: 4 from buffer[3]
+Produced: 7 at buffer[1]
+Consumed: 5 from buffer[4]
+Produced: 8 at buffer[2]
+Consumed: 6 from buffer[0]
+Produced: 9 at buffer[3]
+Consumed: 7 from buffer[1]
+Produced: 10 at buffer[4]
+Consumed: 8 from buffer[2]
+Consumed: 9 from buffer[3]
+Consumed: 10 from buffer[4]
+All items produced and consumed. Exiting.
