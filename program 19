@@ -1,0 +1,28 @@
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h> // for sleep, optional
+
+sem_t mutex, writeBlock;
+int data = 0, readersCount = 0;
+
+void *reader(void *arg) {
+    int id = *(int*)arg;
+    int i = 0;
+    
+    while (i < 10) {
+        // Entry section
+        sem_wait(&mutex);
+        readersCount++;
+        if (readersCount == 1) {
+            sem_wait(&writeBlock); // first reader blocks writers
+        }
+output:
+Reader 1 reads data: 0
+Reader 2 reads data: 0
+Reader 3 reads data: 0
+Writer 1 writes data: 1
+Reader 1 reads data: 1
+Writer 2 writes data: 2
+...
+All threads finished. Final data = 20
