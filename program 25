@@ -1,0 +1,97 @@
+#include <stdio.h>
+#include <fcntl.h>      // for open, fcntl, O_* flags
+#include <unistd.h>     // for lseek, close
+#include <sys/stat.h>   // for stat
+#include <sys/types.h>  // for types
+#include <dirent.h>     // for opendir, readdir
+#include <errno.h>      // for errno
+
+int main()
+{
+    int fd;
+    struct stat fileStat;
+    DIR *dir;
+    struct dirent *dp;
+
+    printf("=== UNIX I/O System Calls Demo ===\n\n");
+
+    // 1. open() - Open or create a file
+    fd = open("foo.txt", O_RDWR | O_CREAT, 0644);
+    if (fd == -1) 
+    {
+        perror("open");
+        return 1;
+    }
+    printf("1. open(): fd = %d\n", fd);
+
+    // 2. fcntl() - Get file status flags
+    int flags = fcntl(fd, F_GETFL);
+    if (flags == -1)
+    {
+        perror("fcntl");
+    }
+    else
+    {
+        printf("2. fcntl(): File flags = %d ", flags);
+        if (flags & O_RDWR) printf("(O_RDWR)\n");
+        else if (flags & O_RDONLY) printf("(O_RDONLY)\n");
+    }
+
+    // 3. lseek() - SEEK system call
+    off_t size = lseek(fd, 0, SEEK_END); // move to end to get size
+    if (size == -1)
+    {
+        perror("lseek");
+    }
+    else
+    {
+        printf("3. lseek(): Current file size = %ld bytes\n", (long)size);
+    }
+    lseek(fd, 0, SEEK_SET); // reset to beginning
+
+    // 4. stat() - Get file information
+    if (stat("foo.txt", &fileStat) == -1)
+    {
+        perror("stat");
+    }
+    else
+    {
+        printf("4. stat(): File size = %ld bytes, Inode = %ld, Links = %ld\n", 
+               (long)fileStat.st_size, (long)fileStat.st_ino, (long)fileStat.st_nlink);
+    }
+
+    // 5. opendir() + readdir() - Read directory contents
+    dir = opendir("."); // open current directory
+    if (dir == NULL)
+    {
+        perror("opendir");
+    }
+    else
+    {
+        printf("5. opendir() + readdir(): Files in current directory:\n");
+        while ((dp = readdir(dir)) != NULL)
+        {
+            printf("   %s\n", dp->d_name);
+        }
+        closedir(dir);
+    }
+
+    close(fd);
+    printf("\nProcess completed successfully.\n");
+    return 0;
+}
+output:
+=== UNIX I/O System Calls Demo ===
+
+1. open(): fd = 3
+2. fcntl(): File flags = 2 (O_RDWR)
+3. lseek(): Current file size = 0 bytes
+4. stat(): File size = 0 bytes, Inode = 1234567, Links = 1
+5. opendir() + readdir(): Files in current directory:
+   .
+   ..
+   foo.txt
+   a.out
+   program.c
+
+Process completed successfully.
